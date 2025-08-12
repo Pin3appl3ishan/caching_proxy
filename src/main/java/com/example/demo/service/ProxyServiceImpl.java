@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -16,10 +17,13 @@ public class ProxyServiceImpl implements ProxyService {
     
     private final RestTemplate restTemplate;
     private final String originUrl;
+    private final CacheManagerService cacheManager;
     
-    public ProxyServiceImpl(RestTemplate restTemplate, @Value("${global.origin}") String originUrl) {
+    @Autowired
+    public ProxyServiceImpl(RestTemplate restTemplate, @Value("${global.origin}") String originUrl, CacheManagerService cacheManager) {
         this.restTemplate = restTemplate;
         this.originUrl = originUrl;
+        this.cacheManager = cacheManager;
     }
     
     @Override
@@ -30,7 +34,14 @@ public class ProxyServiceImpl implements ProxyService {
     
     @Override
     public ResponseEntity<String> getResource(String path) {
-        // Build the full URL by combining origin URL with the requested path
+        // Check cache first
+        ResponseEntity<String> cachedResponse = cacheManager.getCachedResponse(path);
+        if (cachedResponse != null) {
+            // Cache HIT - return cached response with HIT header
+            return cacheManager.addCacheHeader(cachedResponse, CacheManagerService.CACHE_HIT);
+        }
+        
+        // Cache MISS - fetch from origin server
         String fullUrl = UriComponentsBuilder
             .fromHttpUrl(originUrl)
             .path(path)
@@ -43,6 +54,12 @@ public class ProxyServiceImpl implements ProxyService {
             .build();
             
         // Forward the request to the origin server
-        return restTemplate.exchange(request, String.class);
+        ResponseEntity<String> originResponse = restTemplate.exchange(request, String.class);
+        
+        // Cache the response for future requests
+        cacheManager.cacheResponse(path, originResponse);
+        
+        // Return response with MISS header
+        return cacheManager.addCacheHeader(originResponse, CacheManagerService.CACHE_MISS);
     }
 }
