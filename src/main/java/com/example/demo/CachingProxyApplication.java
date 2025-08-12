@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ConfigurableApplicationContext;
+import com.example.demo.service.CacheManagerService;
 
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -110,8 +111,15 @@ public class CachingProxyApplication {
 	
 	private static void clearCache() {
 		System.out.println("🗑️  Clearing cache...");
-		// This will be implemented when we have the cache manager available
-		System.out.println("✅ Cache cleared successfully!");
+		// Start Spring Boot application to get access to CacheManagerService
+		ConfigurableApplicationContext context = SpringApplication.run(CachingProxyApplication.class, new String[]{});
+		CacheManagerService cacheManager = context.getBean(CacheManagerService.class);
+		
+		int cacheSize = cacheManager.getCacheSize();
+		cacheManager.clearCache();
+		
+		System.out.println("✅ Cache cleared successfully! Removed " + cacheSize + " entries.");
+		context.close();
 	}
 
 }
