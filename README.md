@@ -70,13 +70,8 @@ java -jar caching-proxy.jar --clear-cache
 
 ---
 
-## 🔮 Future Improvements
+📌 Project idea from: [roadmap.sh/projects/caching-server](https://roadmap.sh/projects/caching-server)
 
-* Cache TTL & eviction.
-* Persistent cache (Redis, file).
-* Support for POST/PUT caching where applicable.
-
----
 
 ## 📜 License
 
